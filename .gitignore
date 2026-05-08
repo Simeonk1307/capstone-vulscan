@@ -220,3 +220,5 @@ __marimo__/
 *.zip
 old_src/
 CWE_Model_1lyr_12hd_GPU2CPU.pt
+
+vulscan_report*
