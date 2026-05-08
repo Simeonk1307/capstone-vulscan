@@ -1,0 +1,140 @@
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+import os
+import textwrap
+
+
+def create_report(vuls, report_title, save_path):
+    try:
+        pdf = canvas.Canvas(save_path, pagesize=A4)
+        w, h = A4
+        margin = 50
+        
+        # Header
+        pdf.setFillColor(colors.HexColor("#1f538d"))
+        pdf.rect(0, h-80, w, 80, fill=1)
+        
+        pdf.setFillColor(colors.white)
+        pdf.setFont("Helvetica-Bold", 22)
+        pdf.drawCentredString(w/2, h - 35, report_title)
+        
+        pdf.setFont("Helvetica", 10)
+        pdf.drawCentredString(w/2, h - 55, "VulScan Security Vulnerability Scanner")
+        
+        # Summary
+        y = h - 110
+        pdf.setFillColor(colors.black)
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawString(margin, y, "Summary")
+        y -= 25
+        
+        total_vulns = len(vuls)
+        critical_count = sum(1 for v in vuls.values() if "CRITICAL" in v.get('cwe', '').upper())
+        
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString(margin, y, f"Total Vulnerabilities: {total_vulns}")
+        y -= 15
+        pdf.drawString(margin, y, f"Critical: {critical_count}")
+        y -= 15
+        pdf.drawString(margin, y, f"Warning: {total_vulns - critical_count}")
+        y -= 30
+        
+        # Line separator
+        pdf.setStrokeColor(colors.HexColor("#dddddd"))
+        pdf.line(margin, y, w - margin, y)
+        y -= 20
+        
+        # Vulnerabilities
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.setFillColor(colors.HexColor("#1f538d"))
+        pdf.drawString(margin, y, "Vulnerability Details")
+        y -= 25
+        
+        # Group by file
+        files = {}
+        for key, data in vuls.items():
+            parts = key.rsplit(':', 1)
+            filename = parts[0] if len(parts) > 1 else "Unknown"
+            line_num = parts[1] if len(parts) > 1 else "?"
+            
+            if filename not in files:
+                files[filename] = []
+            files[filename].append({'line': line_num, 'data': data})
+        
+        for filename, issues in files.items():
+            # Check if we need a new page
+            if y < 100:
+                pdf.showPage()
+                y = h - 50
+                pdf.setFont("Helvetica-Bold", 12)
+                pdf.setFillColor(colors.HexColor("#1f538d"))
+                pdf.drawString(margin, y, "Vulnerability Details (continued)")
+                y -= 25
+            
+            # File name
+            pdf.setFont("Helvetica-Bold", 11)
+            pdf.setFillColor(colors.black)
+            pdf.drawString(margin, y, f"File: {os.path.basename(filename)}")
+            y -= 20
+            
+            for idx, issue in enumerate(issues, 1):
+                if y < 100:
+                    pdf.showPage()
+                    y = h - 50
+                
+                data = issue['data']
+                line_num = issue['line']
+                
+                # Severity
+                is_critical = "CRITICAL" in data.get('cwe', '').upper()
+                pdf.setFillColor(colors.HexColor("#dc2626") if is_critical else colors.HexColor("#d97706"))
+                pdf.setFont("Helvetica-Bold", 10)
+                severity = "CRITICAL" if is_critical else "WARNING"
+                pdf.drawString(margin, y, f"Issue #{idx} [{severity}]")
+                y -= 15
+                
+                # CWE
+                pdf.setFillColor(colors.black)
+                pdf.setFont("Helvetica", 10)
+                pdf.drawString(margin + 10, y, f"Type: {data.get('cwe', 'Unknown')}")
+                y -= 15
+                
+                # Line
+                pdf.drawString(margin + 10, y, f"Line: {line_num}")
+                y -= 15
+                
+                # Code (with wrapping)
+                code = data.get('code', '')
+                if code:
+                    pdf.drawString(margin + 10, y, "Code:")
+                    y -= 15
+                    
+                    # Wrap code to fit page width
+                    wrapped_lines = textwrap.wrap(code, width=95)
+                    pdf.setFont("Courier", 8)
+                    pdf.setFillColor(colors.HexColor("#333333"))
+                    
+                    for line in wrapped_lines:
+                        if y < 50:
+                            pdf.showPage()
+                            y = h - 50
+                        pdf.drawString(margin + 20, y, line)
+                        y -= 12
+                    
+                    y -= 10
+                
+                y -= 15
+                pdf.setStrokeColor(colors.HexColor("#eeeeee"))
+                pdf.line(margin, y, w - margin, y)
+                y -= 15
+        
+        # Footer
+        pdf.setFillColor(colors.HexColor("#666666"))
+        pdf.setFont("Helvetica", 8)
+        pdf.drawCentredString(w/2, 30, "Generated by VulScan Security Scanner")
+        
+        pdf.save()
+        
+    except Exception as e:
+        raise RuntimeError(f"PDF Generation failed: {str(e)}")
