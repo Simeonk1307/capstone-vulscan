@@ -14,6 +14,3 @@ unzip -d ./old_src/VulScan ./old_src/VulScan/vulscan_deliverables.zip
 
 echo "Creating src directory (if it does not exist)"
 mkdir -p ./src
-
-echo "Copy model from old_src to src"
-cp ./old_src/VulScan/vulscan_deliverables/CWE_Model_1lyr_12hd_GPU2CPU.pt ./src/CWE_Model_1lyr_12hd_GPU2CPU.pt

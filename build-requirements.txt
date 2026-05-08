@@ -1,0 +1,6 @@
+pyinstaller 
+onnxruntime 
+transformers 
+numpy 
+customtkinter
+reportlab
