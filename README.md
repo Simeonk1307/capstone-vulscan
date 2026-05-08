@@ -10,3 +10,9 @@ This repository is regarding the capstone project assigned by Vivek Sir.
     bash setup.sh
 ```
 NOTE: ./src/CWE_Model_1lyr_12hd_GPU2CPU.pt is too big to push to github
+
+## Run this to build the executable (prone to changes as project evolves)
+```bash
+    bash build.sh
+```
+NOTE: this is wrt to current state and will change as project or data changes

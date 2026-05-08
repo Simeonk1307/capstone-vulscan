@@ -1,3 +1,5 @@
+#!/bin/bash
+
 echo "Creating old_src directory (if it does not exist)"
 mkdir -p ./old_src
 
