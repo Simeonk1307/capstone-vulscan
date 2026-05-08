@@ -38,7 +38,7 @@ OR
     source .venv/bin/activate
     pip install -r build-requirements.txt
 ```
-NOTE: remove `torch` i.e all the libraries mentioned in `build-requirements.txt` is put to use
+NOTE: remove `torch`, `pandas` & `scikit-learn` i.e all the libraries mentioned in `build-requirements.txt` is put to use
 
 
 ## Run this to build the executable

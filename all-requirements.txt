@@ -5,3 +5,5 @@ numpy
 customtkinter
 reportlab
 torch
+pandas
+scikit-learn
