@@ -21,7 +21,7 @@ class VulScan(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("VulScan - Security Vulnerability Scanner")
+        self.title("VulScan-LT++ - Security Vulnerability Scanner")
         self.geometry("1400x900")
         self.minsize(1000, 700)
 

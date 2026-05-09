@@ -226,3 +226,5 @@ src/models/
 .build-venv/
 vulscan
 test_samples/
+bundle.txt
+bundle.py
