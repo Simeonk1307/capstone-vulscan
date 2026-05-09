@@ -34,18 +34,20 @@ def create_header(app):
         btns,
         text="Scan Directory",
         command=lambda: app.scan("dir"),
-        fg_color=app.theme["ACCENT"]
+        fg_color=app.theme["ACCENT"],
+        hover_color=app.theme["ACCENT_HOVER"],
+        text_color=app.theme["TEXT"],
     )
-
     app.btn_dir.pack(side="left", padx=6)
 
     app.btn_file = ctk.CTkButton(
         btns,
         text="Scan File",
         command=lambda: app.scan("file"),
-        fg_color=app.theme["ACCENT"]
+        fg_color=app.theme["ACCENT"],
+        hover_color=app.theme["ACCENT_HOVER"],
+        text_color=app.theme["TEXT"],
     )
-
     app.btn_file.pack(side="left", padx=6)
 
     app.btn_export = ctk.CTkButton(
@@ -53,9 +55,9 @@ def create_header(app):
         text="Export Report",
         command=app.export,
         fg_color=app.theme["BORDER"],
-        text_color=app.theme["TEXT_DIM"]
+        hover_color=app.theme["SURFACE_LIGHT"],
+        text_color=app.theme["TEXT"],
     )
-
     app.btn_export.pack(side="left", padx=6)
 
     app.btn_cancel = ctk.CTkButton(
@@ -64,9 +66,9 @@ def create_header(app):
         command=app.cancel_scan,
         state="disabled",
         fg_color=app.theme["WARNING"],
-        text_color=app.theme["TEXT_DIM"]
+        hover_color=app.theme["ERROR"],
+        text_color=app.theme["TEXT"],
     )
-
     app.btn_cancel.pack(side="left", padx=6)
 
     theme_icon = "☀️" if app.is_dark_mode else "🌙"
@@ -80,6 +82,7 @@ def create_header(app):
         font=("Segoe UI", 16),
         fg_color=app.theme["SURFACE_LIGHT"],
         hover_color=app.theme["BORDER"],
+        text_color=app.theme["TEXT"],
         corner_radius=8,
         border_width=0
     ).pack(side="left", padx=6)
