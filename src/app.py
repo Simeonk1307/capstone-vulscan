@@ -42,35 +42,32 @@ class VulScan(ctk.CTk):
 
     def load_engine(self):
         try:
-            model_path = BASE_DIR / "models" / "model.onnx"
+            model_path     = BASE_DIR / "models" / "model.onnx"
             tokenizer_path = BASE_DIR / "models" / "tokenizer_fast"
-            classes_path = BASE_DIR / "models" / "classes.npy"
+            classes_path   = BASE_DIR / "models" / "classes.npy"
 
             self.scanner_engine = ScanEngine(str(model_path), str(tokenizer_path), str(classes_path))
             self.after(0, lambda: self.logger.log("[SYSTEM] Scanner engine ready\n", self.theme["SUCCESS"]))
         except Exception as e:
-            self.after(0, lambda err=str(e): self._handle_engine_error(err))  # single scheduled call
+            self.after(0, lambda err=str(e): self._handle_engine_error(err))
 
     def _handle_engine_error(self, msg):
-        messagebox.showerror("Error", msg)  # blocks until user clicks OK
-        self.destroy()                       # only runs after dialog is dismissed
+        messagebox.showerror("Error", msg)
+        self.destroy()
 
     def toggle_theme(self):
-        editor_content = self.editor.get("1.0", "end-1c")
+        editor_content  = self.editor.get("1.0", "end-1c")
         console_content = self.console.get("1.0", "end-1c")
 
         self.is_dark_mode = not self.is_dark_mode
         self.theme = DARK.copy() if self.is_dark_mode else LIGHT.copy()
 
-        ctk.set_appearance_mode(
-            "dark" if self.is_dark_mode else "light"
-        )
+        ctk.set_appearance_mode("dark" if self.is_dark_mode else "light")
 
         for widget in self.winfo_children():
             widget.destroy()
 
         self.configure(fg_color=self.theme["BG"])
-
         self.build_ui()
         self.logger = ConsoleLogger(self.console, self.theme)
 
@@ -89,13 +86,7 @@ class VulScan(ctk.CTk):
         create_header(self)
 
         ws = ctk.CTkFrame(self, fg_color="transparent")
-        ws.grid(
-            row=1,
-            column=0,
-            sticky="nsew",
-            padx=25,
-            pady=20
-        )
+        ws.grid(row=1, column=0, sticky="nsew", padx=25, pady=20)
         ws.grid_columnconfigure(0, weight=1)
         ws.grid_rowconfigure(0, weight=3)
         ws.grid_rowconfigure(1, weight=2)
@@ -103,12 +94,7 @@ class VulScan(ctk.CTk):
         create_panel(self, ws, 0, "Code Editor", "Paste C/C++ code to analyze", self.analyze, True)
         create_panel(self, ws, 1, "Scan Results", None, None, False)
 
-        prog = ctk.CTkFrame(
-            self,
-            fg_color=self.theme["SURFACE"],
-            height=10,
-            corner_radius=0
-        )
+        prog = ctk.CTkFrame(self, fg_color=self.theme["SURFACE"], height=10, corner_radius=0)
         prog.grid(row=2, column=0, sticky="ew")
         prog.grid_propagate(False)
 
@@ -122,7 +108,6 @@ class VulScan(ctk.CTk):
         self.progress.pack(fill="x")
         self.progress.set(0)
 
-    
     def clear_console(self):
         self.console.configure(state="normal")
         self.console.delete("1.0", "end")
@@ -133,7 +118,7 @@ class VulScan(ctk.CTk):
             return
 
         path = filedialog.askdirectory(title="Select Directory") if mode == "dir" else \
-               filedialog.askopenfilename(title="Select File", filetypes=[("C/C++ Files", "*.c *.h"), ("All", "*.*")])
+               filedialog.askopenfilename(title="Select File", filetypes=[("C/C++ Files", "*.c *.h")])
 
         if not path: return
         self.start_scan(path, mode)
@@ -164,7 +149,7 @@ class VulScan(ctk.CTk):
             self.btn_file.configure(state="disabled")
 
         threading.Thread(target=self.worker, args=(path, mode), daemon=True).start()
-    
+
     def cancel_scan(self):
         if self.is_scanning:
             self.cancel_requested = True
@@ -180,56 +165,30 @@ class VulScan(ctk.CTk):
             messagebox.showinfo("Empty", "Enter code first")
             return
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".c",
-            mode='w',
-            delete=False,
-            encoding='utf-8'
-        ) as f:
-
+        with tempfile.NamedTemporaryFile(suffix=".c", mode='w', delete=False, encoding='utf-8') as f:
             f.write(code)
             temp_path = f.name
 
         self.start_scan(temp_path, "editor")
 
-    
-
     def worker(self, path, mode):
         try:
+            cancel = lambda: self.cancel_requested
+
             if mode == "dir":
-                self.scan_results = {}
                 self.after(0, lambda: self.logger.log("[SYSTEM] Walking directory tree...\n", self.theme["TEXT_DIM"]))
 
-                for root, _, files in os.walk(path):
-                    for file in files:
+                def on_file(name, current, total):
+                    self.after(0, lambda n=name: self.logger.log(f"[SCAN] Reading: {n}\n", self.theme["TEXT_DIM"]))
+                    self.after(0, lambda: self.progress.set(current / total))
 
-                        if self.cancel_requested:
-                            self.after(0, self.handle_cancel)
-                            return
-
-                        if not file.endswith((".c", ".h", ".cpp", ".hpp")):
-                            continue
-
-                        full_path = os.path.join(root, file)
-
-                        self.after(0, lambda p=full_path:
-                            self.logger.log(f"[SCAN] Reading: {os.path.basename(p)}\n", self.theme["TEXT_DIM"])
-                        )
-
-                        result = self.scanner_engine._process_file(full_path)[1]
-                        self.scan_results[full_path] = result
-                        self.files_scanned += 1
+                self.scan_results  = self.scanner_engine.scan_dir(path, on_file=on_file, cancel_flag=cancel)
+                self.files_scanned = len(self.scan_results)
 
             else:
-                if self.cancel_requested:
-                    self.after(0, self.handle_cancel)
-                    return
-
-                self.after(0, lambda:
-                    self.logger.log(f"[SCAN] Processing file...\n", self.theme["TEXT_DIM"])
-                )
-
-                self.scan_results = {path: self.scanner_engine._process_file(path)[1]}
+                self.after(0, lambda: self.logger.log("[SCAN] Processing file...\n", self.theme["TEXT_DIM"]))
+                _, vuls            = self.scanner_engine.scan_file(path, cancel_flag=cancel)
+                self.scan_results  = {path: vuls}
                 self.files_scanned = 1
 
             if self.cancel_requested:
@@ -240,7 +199,7 @@ class VulScan(ctk.CTk):
             self.after(0, lambda: self.show_results(mode))
 
         except Exception as e:
-            self.after(0, lambda: self.logger.log(f"\n[ERROR] {str(e)}\n", self.theme["ERROR"]))
+            self.after(0, lambda err=str(e): self.logger.log(f"\n[ERROR] {err}\n", self.theme["ERROR"]))
             self.after(0, lambda: self.progress.set(0))
         finally:
             self.is_scanning = False
@@ -251,14 +210,14 @@ class VulScan(ctk.CTk):
             ))
 
     def handle_cancel(self):
-        self.scan_results = {}
+        self.scan_results  = {}
         self.files_scanned = 0
         self.logger.log("\n[SYSTEM] Scan cancelled by user.\n", self.theme["WARNING"])
         self.progress.set(0)
         self.btn_export.configure(state="disabled")
 
     def show_results(self, mode):
-        total = sum(len(v) for v in self.scan_results.values())
+        total            = sum(len(v) for v in self.scan_results.values())
         files_with_issues = sum(1 for v in self.scan_results.values() if v)
 
         self.logger.log("=" * 90 + "\n", self.theme["BORDER"])
@@ -283,17 +242,15 @@ class VulScan(ctk.CTk):
 
             for idx, issue in enumerate(issues, 1):
                 critical = "CRITICAL" in issue.get('cwe', '').upper()
-                color = self.theme["ERROR"] if critical else self.theme["WARNING"]
+                color    = self.theme["ERROR"] if critical else self.theme["WARNING"]
 
-                self.logger.log(f"\n  Issue #{idx}\n", self.theme["TEXT"])
+                self.logger.log(f"\n  Issue #{idx}\n",                                    self.theme["TEXT"])
                 self.logger.log(f"  Severity: {'CRITICAL' if critical else 'WARNING'}\n", color)
-                self.logger.log(f"  Line: {issue['line']}\n", self.theme["TEXT"])
-                self.logger.log(f"  Type: {issue['cwe']}\n", self.theme["TEXT"])
-                self.logger.log(f"  Code: {issue['code'][:75]}...\n", self.theme["TEXT_DIM"])
+                self.logger.log(f"  Line: {issue['line']}\n",                             self.theme["TEXT"])
+                self.logger.log(f"  Type: {issue['cwe']}\n",                              self.theme["TEXT"])
+                self.logger.log(f"  Code: {issue['code'][:75]}...\n",                     self.theme["TEXT_DIM"])
 
         self.progress.set(1.0)
-
-        # if total > 0:
         self.btn_export.configure(state="normal")
         self.logger.log("\nUse 'Export Report' to generate PDF\n", self.theme["TEXT_DIM"])
 
@@ -304,7 +261,7 @@ class VulScan(ctk.CTk):
 
         try:
             data = {f"{os.path.basename(f)}:L{i['line']}": i
-                   for f, issues in self.scan_results.items() for i in issues}
+                    for f, issues in self.scan_results.items() for i in issues}
             create_report(data, "VulScan Security Report", dest)
             messagebox.showinfo("Success", f"Report saved to:\n{dest}")
         except Exception as e:

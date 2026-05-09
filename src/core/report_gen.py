@@ -97,8 +97,15 @@ def create_report(vuls, report_title, save_path):
                 # CWE
                 pdf.setFillColor(colors.black)
                 pdf.setFont("Helvetica", 10)
-                pdf.drawString(margin + 10, y, f"Type: {data.get('cwe', 'Unknown')}")
-                y -= 15
+                cwe_text = f"Type: {data.get('cwe', 'Unknown')}"
+                wrapped_cwe = textwrap.wrap(cwe_text, width=85)
+                
+                for line in wrapped_cwe:
+                    if y < 50:
+                        pdf.showPage()
+                        y = h - 50
+                    pdf.drawString(margin + 10, y, line)
+                    y -= 15
                 
                 # Line
                 pdf.drawString(margin + 10, y, f"Line: {line_num}")

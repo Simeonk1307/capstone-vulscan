@@ -7,3 +7,4 @@ reportlab
 torch
 pandas
 scikit-learn
+onnxscript
