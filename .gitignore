@@ -225,3 +225,4 @@ vulscan_report*
 src/models/
 .build-venv/
 vulscan
+test_samples/

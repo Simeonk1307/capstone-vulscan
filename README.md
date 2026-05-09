@@ -26,9 +26,21 @@ NOTE: ./src/models/* is not supposed to be pushed to github
 NOTE: do this after setup.sh  
 NOTE: use `torch` i.e all the libraries mentioned in `all-requirements.txt` is put to use
 
+## Create test files using `create-tests.sh`
+```bash
+    bash create-tests.sh
+```
+NOTE: create test files in ./test_samples
+
+## Run this before building
+```bash
+    python3 ./src/app.py
+```
+NOTE: use the test files in ./test_samples to check the tool
+
 ## Uninstall torch (all its dependencies shd be removed)
 ```bash
-    pip uninstall torch
+    pip uninstall torch pandas onnxscript scikit-learn
 ```
 OR
 
@@ -38,7 +50,7 @@ OR
     source .venv/bin/activate
     pip install -r build-requirements.txt
 ```
-NOTE: remove `torch`, `pandas` & `scikit-learn` i.e all the libraries mentioned in `build-requirements.txt` is put to use
+NOTE: remove `torch`, `pandas`, `onnxscript` & `scikit-learn` i.e all the libraries mentioned in `build-requirements.txt` are only put to use
 
 
 ## Run this to build the executable
