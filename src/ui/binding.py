@@ -70,7 +70,7 @@ def setup_editor_bindings(app):
         app.editor.bind(key, func)
 
 
-def setup_console_bindings(app, ):
+def setup_console_bindings(app):
     binds = {
         "<Control-a>": lambda e: select_all(app.console),
         "<Control-A>": lambda e: select_all(app.console),
